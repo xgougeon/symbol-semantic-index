@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "material-symbol-semantic-index"
+version = "0.1.0"
+description = "Semantic retrieval and set-aware selection for Google Material Symbols."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "Xavier Gougeon" }
+]
+dependencies = []
+
+[project.scripts]
+msi = "material_symbol_semantic_index.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+material_symbol_semantic_index = ["py.typed", "data/*.codepoints"]

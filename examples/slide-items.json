@@ -1,0 +1,15 @@
+[
+  {
+    "label": "truth",
+    "text": "Establish a single source of truth for governed data products."
+  },
+  {
+    "label": "workflow",
+    "text": "Automate workflows so teams can reuse trusted context."
+  },
+  {
+    "label": "insight",
+    "text": "Surface insights before quality issues reach customers."
+  }
+]
+
