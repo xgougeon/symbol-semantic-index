@@ -26,6 +26,15 @@ PYTHONPATH=src python -m material_symbol_semantic_index.cli select \
   "Surface insights before quality issues reach customers."
 ```
 
+For PNG-backed visual metadata, including DataGalaxy icons:
+
+```bash
+PYTHONPATH=src python -m material_symbol_semantic_index.cli visual-select \
+  --items examples/slide-items.json \
+  --allow-material-fallback \
+  --json
+```
+
 For an agent rerank prompt:
 
 ```bash
@@ -50,6 +59,23 @@ selection = select_icons([
 
 for choice in selection.choices:
     print(choice.icon.name, choice.rationale)
+```
+
+For DataGalaxy/PNG visual metadata:
+
+```python
+from material_symbol_semantic_index import select_visual_icons
+
+selection = select_visual_icons(
+    [
+        "Establish a single source of truth for governed data products.",
+        "Automate workflows so teams can reuse trusted context.",
+    ],
+    allow_material_fallback=True,
+)
+
+for choice in selection.choices:
+    print(choice.icon.unique_name, choice.icon.source_path)
 ```
 
 ## Why This Shape
@@ -91,6 +117,11 @@ ink coverage, symmetry, visual weight, orientation, and edge complexity. The
 denotation/connotation fields are a first-pass semantic interpretation from
 the visual metrics plus icon names and folder categories, marked with
 `curation_status` for review.
+
+Use `visual-select` when a downstream renderer needs an actual PNG asset path,
+not only a Material Symbol codepoint. It scores the JSONL metadata locally,
+prefers DataGalaxy-native icons by default, and can fall back to Material
+Symbols when `--allow-material-fallback` is set.
 
 ## Data Source
 

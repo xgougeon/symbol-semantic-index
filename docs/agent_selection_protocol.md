@@ -5,10 +5,16 @@ short paragraphs, especially when several icons appear together on a slide.
 
 ## Tool Contract
 
-The agent should call the local retriever first:
+The agent should call a local retriever first. For Material Symbols codepoints:
 
 ```bash
 msi select --items slide-items.json --json
+```
+
+For visual metadata with PNG paths, including DataGalaxy icons:
+
+```bash
+msi visual-select --items slide-items.json --allow-material-fallback --json
 ```
 
 The input JSON is an array of strings or objects:
@@ -43,6 +49,27 @@ and neighbor relation for every item.
      distinct enough to avoid semantic blur
 5. Return the chosen icon plus rejected alternatives.
 
+## DataGalaxy / PNG Selection
+
+Use `visual-select` when the renderer needs a file-backed asset reference. It
+reads `data/icon_visual_metadata.jsonl`, which includes both DataGalaxy icons
+and Material Symbol PNGs.
+
+Default behavior is strict brand mode: prefer DataGalaxy icons and do not use
+Material Symbols. Add `--allow-material-fallback` when semantic precision is
+more important than style purity.
+
+The output includes:
+
+- `icon_id`, such as `datagalaxy:glossary/reference-data`
+- `asset_ref` / `source_path`
+- semantic domains and roles
+- score, rationale, alternatives, metadata hash, and repo commit
+
+Do not paste the full visual metadata catalog into an LLM prompt. Run retrieval
+locally, then pass only selected icons and a short alternatives list to the LLM
+if high-stakes reranking is needed.
+
 ## Semiotic Rubric
 
 - Denotation: what the glyph literally depicts.
@@ -62,4 +89,3 @@ msi prompt --items slide-items.json
 
 Feed that prompt to the language model after retrieval. The model must choose
 only from the supplied candidates and must justify the set-level semiotics.
-
