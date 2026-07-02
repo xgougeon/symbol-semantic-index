@@ -37,26 +37,6 @@ def health() -> HealthResponse:
     return HealthResponse(status="ok", service_version=SERVICE_VERSION)
 
 
-@app.get("/_debug/paths")
-def debug_paths() -> dict:
-    def describe(path: Path) -> dict:
-        info = {"path": str(path), "exists": path.exists()}
-        if path.exists() and path.is_dir():
-            try:
-                info["listing"] = sorted(p.name for p in path.iterdir())[:20]
-            except OSError as exc:
-                info["listing_error"] = str(exc)
-        return info
-
-    return {
-        "cwd": str(Path.cwd()),
-        "file": str(Path(__file__).resolve()),
-        "repo_root": describe(REPO_ROOT),
-        "data_dir": describe(DATA_DIR),
-        "static_dir": describe(STATIC_DIR),
-    }
-
-
 @app.post("/v1/icons/select", response_model=IconSelectResponse)
 def select_icon(payload: IconSelectRequest) -> IconSelectResponse:
     combined_context = " ".join(part for part in (payload.tone, payload.context) if part)
