@@ -144,3 +144,64 @@ python scripts/fetch_material_symbols.py
 ```bash
 PYTHONPATH=src python -m unittest discover -s tests
 ```
+
+## HTTP API
+
+A minimal FastAPI service wraps `select_visual_icons` for one icon request at a
+time.
+
+Install API dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run locally:
+
+```bash
+PYTHONPATH=src uvicorn material_symbol_semantic_index.api.main:app --host 0.0.0.0 --port 8000
+```
+
+### `POST /v1/icons/select`
+
+Request body:
+
+```json
+{
+  "text": "Establish a single source of truth for governed data products.",
+  "tone": "confident",
+  "context": "opening slide of a leadership deck",
+  "prefer_style": "datagalaxy",
+  "allow_material_fallback": true,
+  "avoid": ["security"],
+  "alternatives": 5
+}
+```
+
+Only `text` is required (1-2000 characters). The response includes the
+selected icon, its `asset_ref` path, `score`, `rationale`, `alternatives`,
+`warnings`, `metadata_sha256`, and `service_version`. Invalid input (missing,
+blank, or oversized `text`, wrong field types, or a request that leaves no
+candidates) returns `400` with a `detail` explanation.
+
+Example:
+
+```bash
+curl -s -X POST http://localhost:8000/v1/icons/select \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Establish a single source of truth for governed data products."}'
+```
+
+### `GET /health`
+
+Returns `{"status": "ok", "service_version": "..."}` for uptime checks.
+
+Interactive docs are available at `/docs` once the server is running.
+
+### Deploying to Render
+
+`render.yaml` defines a single web service that installs `requirements.txt`
+and runs the same `uvicorn` command as above, bound to Render's `$PORT`, with
+`/health` wired up as the health check path. Push this repo to a Git remote
+Render can see, then create a Blueprint from `render.yaml` (or a Web Service
+pointing at this repo) in the Render dashboard.

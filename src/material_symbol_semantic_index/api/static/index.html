@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Symbol Semantic Index — Icon Selector</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #0f1720;
+    --panel: #182231;
+    --border: #2a3648;
+    --text: #e8edf4;
+    --muted: #93a2b8;
+    --accent: #4fd1c5;
+    --danger: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 2rem 1rem 4rem;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+  .sub { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; font-size: 0.9rem; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin: 0.75rem 0 0.25rem; }
+  label:first-child { margin-top: 0; }
+  input[type="text"], input[type="number"], textarea, select {
+    width: 100%;
+    background: #0f1720;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 4.5rem; }
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 160px; }
+  .checkbox-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.9rem; }
+  .checkbox-row input { width: auto; }
+  .checkbox-row label { margin: 0; color: var(--text); font-size: 0.9rem; }
+  button {
+    margin-top: 1.25rem;
+    background: var(--accent);
+    color: #06201d;
+    border: none;
+    border-radius: 6px;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .error {
+    background: #2a1414;
+    border: 1px solid var(--danger);
+    color: #fca5a5;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+  }
+  .selected { display: flex; gap: 1.25rem; align-items: center; }
+  .selected img, .alt img {
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px;
+  }
+  .selected img { width: 88px; height: 88px; }
+  .selected .meta h2 { margin: 0 0 0.2rem; font-size: 1.1rem; }
+  .selected .meta .id { color: var(--muted); font-size: 0.8rem; margin-bottom: 0.4rem; }
+  .selected .meta .score { color: var(--accent); font-size: 0.85rem; font-weight: 600; }
+  .rationale { margin-top: 0.75rem; color: var(--muted); font-size: 0.85rem; line-height: 1.4; }
+  .warnings { margin-top: 0.75rem; color: #fbbf24; font-size: 0.85rem; }
+  .footer-meta { margin-top: 1rem; color: var(--muted); font-size: 0.75rem; }
+  h3.section { font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 1.5rem 0 0.75rem; }
+  .alts { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .alt {
+    width: 130px;
+    background: #0f1720;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem;
+    text-align: center;
+  }
+  .alt img { width: 48px; height: 48px; margin-bottom: 0.4rem; }
+  .alt .name { font-size: 0.75rem; word-break: break-word; }
+  .alt .score { font-size: 0.7rem; color: var(--muted); }
+  .placeholder { color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Symbol Semantic Index — Icon Selector</h1>
+  <p class="sub">POC UI over <code>POST /v1/icons/select</code>.</p>
+
+  <div class="panel">
+    <form id="select-form">
+      <label for="text">Text *</label>
+      <textarea id="text" required maxlength="2000" placeholder="Establish a single source of truth for governed data products.">Establish a single source of truth for governed data products.</textarea>
+
+      <div class="row">
+        <div>
+          <label for="tone">Tone (optional)</label>
+          <input type="text" id="tone" placeholder="confident" />
+        </div>
+        <div>
+          <label for="context">Context (optional)</label>
+          <input type="text" id="context" placeholder="opening slide of a leadership deck" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="prefer_style">Preferred style</label>
+          <select id="prefer_style">
+            <option value="datagalaxy" selected>datagalaxy</option>
+            <option value="material-symbol-rounded">material-symbol-rounded</option>
+          </select>
+        </div>
+        <div>
+          <label for="avoid">Avoid (comma-separated)</label>
+          <input type="text" id="avoid" placeholder="security, risk" />
+        </div>
+        <div>
+          <label for="alternatives">Alternatives</label>
+          <input type="number" id="alternatives" min="0" max="50" value="5" />
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="allow_material_fallback" checked />
+        <label for="allow_material_fallback">Allow Material Symbol fallback</label>
+      </div>
+
+      <button id="submit-btn" type="submit">Select icon</button>
+    </form>
+  </div>
+
+  <div id="error" class="error" style="display:none;"></div>
+  <div id="results"></div>
+</div>
+
+<script>
+const form = document.getElementById('select-form');
+const submitBtn = document.getElementById('submit-btn');
+const errorBox = document.getElementById('error');
+const resultsBox = document.getElementById('results');
+
+function assetUrl(sourcePath) {
+  if (!sourcePath) return null;
+  const rel = sourcePath.startsWith('data/') ? sourcePath.slice(5) : sourcePath;
+  return '/assets/' + rel.split('/').map(encodeURIComponent).join('/');
+}
+
+function iconImgHtml(icon) {
+  const url = assetUrl(icon.source_path);
+  return url ? `<img src="${url}" alt="${icon.name}" onerror="this.style.display='none'" />` : '';
+}
+
+function renderResult(data) {
+  const icon = data.icon;
+  const alternativesHtml = data.alternatives.map(alt => `
+      <div class="alt">
+        ${iconImgHtml(alt)}
+        <div class="name">${alt.name}</div>
+        <div class="score">${alt.style} · ${alt.score.toFixed(2)}</div>
+      </div>`).join('');
+
+  const warningsHtml = data.warnings.length
+    ? `<div class="warnings">⚠ ${data.warnings.join('; ')}</div>`
+    : '';
+
+  resultsBox.innerHTML = `
+    <div class="panel">
+      <div class="selected">
+        ${iconImgHtml(icon)}
+        <div class="meta">
+          <h2>${icon.name}</h2>
+          <div class="id">${icon.icon_id} · ${icon.style}</div>
+          <div class="score">score ${data.score.toFixed(2)}</div>
+        </div>
+      </div>
+      <div class="rationale">${data.rationale}</div>
+      ${warningsHtml}
+      <div class="footer-meta">
+        metadata_sha256: ${data.metadata_sha256.slice(0, 16)}… · service_version: ${data.service_version}
+      </div>
+      ${data.alternatives.length ? `<h3 class="section">Alternatives</h3><div class="alts">${alternativesHtml}</div>` : ''}
+    </div>
+  `;
+}
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  errorBox.style.display = 'none';
+  resultsBox.innerHTML = '<p class="placeholder">Selecting…</p>';
+  submitBtn.disabled = true;
+
+  const avoidRaw = document.getElementById('avoid').value.trim();
+  const payload = {
+    text: document.getElementById('text').value,
+    prefer_style: document.getElementById('prefer_style').value,
+    allow_material_fallback: document.getElementById('allow_material_fallback').checked,
+    alternatives: Number(document.getElementById('alternatives').value || 5),
+  };
+  const tone = document.getElementById('tone').value.trim();
+  const context = document.getElementById('context').value.trim();
+  if (tone) payload.tone = tone;
+  if (context) payload.context = context;
+  if (avoidRaw) payload.avoid = avoidRaw.split(',').map(s => s.trim()).filter(Boolean);
+
+  try {
+    const response = await fetch('/v1/icons/select', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      const detail = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail, null, 2);
+      throw new Error(`${response.status}: ${detail}`);
+    }
+    renderResult(data);
+  } catch (err) {
+    resultsBox.innerHTML = '';
+    errorBox.textContent = err.message;
+    errorBox.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
