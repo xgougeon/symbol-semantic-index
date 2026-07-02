@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import re
 from pathlib import Path, PurePosixPath
 from urllib.parse import quote
 
@@ -37,6 +38,19 @@ COLOR_PALETTE = {
     "orange": (255, 152, 0),
     "green": (0, 190, 130),
 }
+
+HEX_COLOR_RE = re.compile(r"^#?([0-9A-Fa-f]{6})$")
+
+
+def resolve_color(color: str) -> tuple[int, int, int] | None:
+    """Named palette entry, or an arbitrary #RRGGBB / RRGGBB hex color."""
+    if color in COLOR_PALETTE:
+        return COLOR_PALETTE[color]
+    match = HEX_COLOR_RE.match(color)
+    if not match:
+        return None
+    hex_digits = match.group(1)
+    return tuple(int(hex_digits[i : i + 2], 16) for i in (0, 2, 4))
 
 app = FastAPI(title="Symbol Semantic Index API", version=SERVICE_VERSION)
 
@@ -181,10 +195,14 @@ def get_asset(asset_path: str, color: str | None = None):
     if color is None:
         return FileResponse(resolved)
 
-    if color not in COLOR_PALETTE:
+    rgb = resolve_color(color)
+    if rgb is None:
         raise HTTPException(
             status_code=400,
-            detail=f"unknown color '{color}', choose one of {sorted(COLOR_PALETTE)}",
+            detail=(
+                f"unknown color '{color}', choose one of {sorted(COLOR_PALETTE)} "
+                "or a hex color like '1E3A8A' / '#1E3A8A'"
+            ),
         )
     if resolved.suffix.lower() != ".png":
         raise HTTPException(
@@ -192,7 +210,7 @@ def get_asset(asset_path: str, color: str | None = None):
         )
 
     image = Image.open(resolved).convert("RGBA")
-    r, g, b = COLOR_PALETTE[color]
+    r, g, b = rgb
     alpha = image.split()[3]
     tinted = Image.new("RGBA", image.size, (r, g, b, 0))
     tinted.putalpha(alpha)

@@ -141,6 +141,29 @@ class AssetRecolorTests(unittest.TestCase):
         response = client.get(f"/assets{path}", params={"color": "purple"})
         self.assertEqual(response.status_code, 400)
 
+    def test_hex_color_without_hash_matches_requested_color(self) -> None:
+        path = self._first_asset_path()
+        response = client.get(f"/assets{path}", params={"color": "1E3A8A"})
+        self.assertEqual(response.status_code, 200)
+        image = Image.open(io.BytesIO(response.content)).convert("RGBA")
+        opaque_pixels = [p for p in image.getdata() if p[3] > 200]
+        self.assertTrue(opaque_pixels)
+        self.assertTrue(all(p[:3] == (0x1E, 0x3A, 0x8A) for p in opaque_pixels))
+
+    def test_hex_color_with_hash_matches_requested_color(self) -> None:
+        path = self._first_asset_path()
+        response = client.get(f"/assets{path}", params={"color": "#93C5FD"})
+        self.assertEqual(response.status_code, 200)
+        image = Image.open(io.BytesIO(response.content)).convert("RGBA")
+        opaque_pixels = [p for p in image.getdata() if p[3] > 200]
+        self.assertTrue(opaque_pixels)
+        self.assertTrue(all(p[:3] == (0x93, 0xC5, 0xFD) for p in opaque_pixels))
+
+    def test_malformed_hex_color_returns_400(self) -> None:
+        path = self._first_asset_path()
+        response = client.get(f"/assets{path}", params={"color": "12345"})
+        self.assertEqual(response.status_code, 400)
+
     def test_unknown_asset_returns_404(self) -> None:
         response = client.get("/assets/does/not/exist.png")
         self.assertEqual(response.status_code, 404)

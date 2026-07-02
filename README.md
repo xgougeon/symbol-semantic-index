@@ -218,11 +218,12 @@ response (minus the top-level `metadata_sha256`/`service_version` duplication).
 
 Serves the icon PNGs referenced by `asset_ref`. Add `?color=` to get a
 recolored variant instead of the template's default black — useful for
-status-signaling icons (e.g. a risk icon tinted red). Supported values:
-`black`, `white`, `red`, `orange`, `green`. Recoloring replaces every non-transparent
-pixel's RGB with the target color while preserving the original alpha, so it
-only makes sense for simple single-color line icons (which is what this
-template's icon set is).
+status-signaling icons (e.g. a risk icon tinted red). Accepts either a named
+color (`black`, `white`, `red`, `orange`, `green`) or an arbitrary hex color
+(`1E3A8A` or `#1E3A8A`) for anything outside that palette. Recoloring replaces
+every non-transparent pixel's RGB with the target color while preserving the
+original alpha, so it only makes sense for simple single-color line icons
+(which is what this template's icon set is).
 
 ```bash
 curl -s "http://localhost:8000/assets/raw/neo29/DataGalaxy%20Icons/dictionary/database.png?color=red" -o red-database.png
