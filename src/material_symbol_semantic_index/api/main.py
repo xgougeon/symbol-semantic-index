@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from urllib.parse import quote
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
@@ -8,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from ..visual_selector import VisualSelectionItem, icon_to_json, select_visual_icons
+from ..visual_selector import VisualIconRecord, VisualSelectionItem, icon_to_json, select_visual_icons
 from .schemas import (
     HealthResponse,
     IconSelectRequest,
@@ -32,13 +33,30 @@ async def handle_validation_error(
     )
 
 
+def downloadable_asset_url(icon: VisualIconRecord, base_url: str) -> str | None:
+    """Public URL for the icon PNG, servable via the /assets mount (not a server-local path)."""
+    if not icon.source_path:
+        return None
+    relative = PurePosixPath(icon.source_path)
+    if relative.parts and relative.parts[0] == "data":
+        relative = PurePosixPath(*relative.parts[1:])
+    encoded = "/".join(quote(part) for part in relative.parts)
+    return f"{base_url.rstrip('/')}/assets/{encoded}"
+
+
+def icon_json_with_url(icon: VisualIconRecord, base_url: str) -> dict:
+    payload = icon_to_json(icon)
+    payload["asset_ref"] = downloadable_asset_url(icon, base_url)
+    return payload
+
+
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(status="ok", service_version=SERVICE_VERSION)
 
 
 @app.post("/v1/icons/select", response_model=IconSelectResponse)
-def select_icon(payload: IconSelectRequest) -> IconSelectResponse:
+def select_icon(payload: IconSelectRequest, request: Request) -> IconSelectResponse:
     combined_context = " ".join(part for part in (payload.tone, payload.context) if part)
     item = VisualSelectionItem(
         text=payload.text,
@@ -62,7 +80,8 @@ def select_icon(payload: IconSelectRequest) -> IconSelectResponse:
         ) from exc
 
     choice = selection.choices[0]
-    selected = icon_to_json(choice.icon, repo_root=REPO_ROOT)
+    base_url = str(request.base_url)
+    selected = icon_json_with_url(choice.icon, base_url)
     return IconSelectResponse(
         icon=selected,
         asset_ref=selected["asset_ref"],
@@ -70,7 +89,7 @@ def select_icon(payload: IconSelectRequest) -> IconSelectResponse:
         rationale=choice.rationale,
         alternatives=[
             {
-                **icon_to_json(candidate.icon, repo_root=REPO_ROOT),
+                **icon_json_with_url(candidate.icon, base_url),
                 "score": candidate.score,
                 "reasons": list(candidate.reasons),
             }
