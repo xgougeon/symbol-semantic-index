@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+import io
 from pathlib import Path, PurePosixPath
 from urllib.parse import quote
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from PIL import Image
 
 from ..visual_selector import VisualIconRecord, VisualSelectionItem, icon_to_json, select_visual_icons
 from .schemas import (
     HealthResponse,
+    IconSelectBatchChoice,
+    IconSelectBatchRequest,
+    IconSelectBatchResponse,
     IconSelectRequest,
     IconSelectResponse,
 )
@@ -20,6 +25,18 @@ SERVICE_VERSION = "0.1.0"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 DATA_DIR = REPO_ROOT / "data"
+
+# Sampled from the DataGalaxy template itself where possible (see docs/color audit,
+# 2026-07-02): red from the problem-single card icon, green from the
+# cards-2-comparison "after" card gradient. No orange reference existed in the
+# template, so it's a standard warm orange rather than a sampled brand value.
+COLOR_PALETTE = {
+    "black": (0, 0, 0),
+    "white": (255, 255, 255),
+    "red": (255, 0, 64),
+    "orange": (255, 152, 0),
+    "green": (0, 190, 130),
+}
 
 app = FastAPI(title="Symbol Semantic Index API", version=SERVICE_VERSION)
 
@@ -48,6 +65,24 @@ def icon_json_with_url(icon: VisualIconRecord, base_url: str) -> dict:
     payload = icon_to_json(icon)
     payload["asset_ref"] = downloadable_asset_url(icon, base_url)
     return payload
+
+
+def choice_to_dict(choice, base_url: str) -> dict:
+    selected = icon_json_with_url(choice.icon, base_url)
+    return {
+        "icon": selected,
+        "asset_ref": selected["asset_ref"],
+        "score": choice.score,
+        "rationale": choice.rationale,
+        "alternatives": [
+            {
+                **icon_json_with_url(candidate.icon, base_url),
+                "score": candidate.score,
+                "reasons": list(candidate.reasons),
+            }
+            for candidate in choice.alternatives
+        ],
+    }
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -79,21 +114,51 @@ def select_icon(payload: IconSelectRequest, request: Request) -> IconSelectRespo
             status_code=500, detail=f"icon metadata unavailable: {exc}"
         ) from exc
 
-    choice = selection.choices[0]
     base_url = str(request.base_url)
-    selected = icon_json_with_url(choice.icon, base_url)
     return IconSelectResponse(
-        icon=selected,
-        asset_ref=selected["asset_ref"],
-        score=choice.score,
-        rationale=choice.rationale,
-        alternatives=[
-            {
-                **icon_json_with_url(candidate.icon, base_url),
-                "score": candidate.score,
-                "reasons": list(candidate.reasons),
-            }
-            for candidate in choice.alternatives
+        **choice_to_dict(selection.choices[0], base_url),
+        warnings=list(selection.warnings),
+        metadata_sha256=selection.metadata_sha256,
+        service_version=SERVICE_VERSION,
+    )
+
+
+@app.post("/v1/icons/select-batch", response_model=IconSelectBatchResponse)
+def select_icons_batch(
+    payload: IconSelectBatchRequest, request: Request
+) -> IconSelectBatchResponse:
+    items = []
+    for entry in payload.items:
+        combined_context = " ".join(part for part in (entry.tone, entry.context) if part)
+        items.append(
+            VisualSelectionItem(
+                text=entry.text,
+                label=entry.label,
+                context=combined_context,
+                avoid=tuple(entry.avoid or ()),
+            )
+        )
+
+    try:
+        selection = select_visual_icons(
+            items,
+            prefer_style=payload.prefer_style,
+            allow_material_fallback=payload.allow_material_fallback,
+            alternatives=payload.alternatives,
+            repo_root=REPO_ROOT,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=500, detail=f"icon metadata unavailable: {exc}"
+        ) from exc
+
+    base_url = str(request.base_url)
+    return IconSelectBatchResponse(
+        choices=[
+            IconSelectBatchChoice(label=choice.item.label, **choice_to_dict(choice, base_url))
+            for choice in selection.choices
         ],
         warnings=list(selection.warnings),
         metadata_sha256=selection.metadata_sha256,
@@ -101,7 +166,40 @@ def select_icon(payload: IconSelectRequest, request: Request) -> IconSelectRespo
     )
 
 
-# Mounted after the routes above so /health and /v1/icons/select still match first.
-if DATA_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=DATA_DIR), name="assets")
+@app.get("/assets/{asset_path:path}")
+def get_asset(asset_path: str, color: str | None = None):
+    if not DATA_DIR.exists():
+        raise HTTPException(status_code=404, detail="not found")
+    resolved = (DATA_DIR / asset_path).resolve()
+    try:
+        resolved.relative_to(DATA_DIR.resolve())
+    except ValueError:
+        raise HTTPException(status_code=404, detail="not found")
+    if not resolved.is_file():
+        raise HTTPException(status_code=404, detail="not found")
+
+    if color is None:
+        return FileResponse(resolved)
+
+    if color not in COLOR_PALETTE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unknown color '{color}', choose one of {sorted(COLOR_PALETTE)}",
+        )
+    if resolved.suffix.lower() != ".png":
+        raise HTTPException(
+            status_code=400, detail="color recoloring is only supported for .png assets"
+        )
+
+    image = Image.open(resolved).convert("RGBA")
+    r, g, b = COLOR_PALETTE[color]
+    alpha = image.split()[3]
+    tinted = Image.new("RGBA", image.size, (r, g, b, 0))
+    tinted.putalpha(alpha)
+    buffer = io.BytesIO()
+    tinted.save(buffer, format="PNG")
+    return Response(content=buffer.getvalue(), media_type="image/png")
+
+
+# Mounted after the routes above so /health, /v1/icons/select*, and /assets/... still match first.
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="ui")

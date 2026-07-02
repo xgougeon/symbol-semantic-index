@@ -192,6 +192,42 @@ curl -s -X POST http://localhost:8000/v1/icons/select \
   -d '{"text": "Establish a single source of truth for governed data products."}'
 ```
 
+### `POST /v1/icons/select-batch`
+
+For selecting icons for several related items (e.g. every icon on one slide)
+as a coherent set — reuses `select_visual_icons`' existing dedup/category
+balancing across items, rather than each item picking independently and
+risking duplicate icons.
+
+```json
+{
+  "items": [
+    {"label": "card1", "text": "Establish a single source of truth."},
+    {"label": "card2", "text": "Automate workflows so teams can reuse trusted context."}
+  ],
+  "prefer_style": "datagalaxy",
+  "alternatives": 5
+}
+```
+
+Returns `{"choices": [...], "warnings": [...], "metadata_sha256": "...", "service_version": "..."}`,
+one choice per input item in the same order, each shaped like the single-select
+response (minus the top-level `metadata_sha256`/`service_version` duplication).
+
+### `GET /assets/{path}`
+
+Serves the icon PNGs referenced by `asset_ref`. Add `?color=` to get a
+recolored variant instead of the template's default black — useful for
+status-signaling icons (e.g. a risk icon tinted red). Supported values:
+`black`, `white`, `red`, `orange`, `green`. Recoloring replaces every non-transparent
+pixel's RGB with the target color while preserving the original alpha, so it
+only makes sense for simple single-color line icons (which is what this
+template's icon set is).
+
+```bash
+curl -s "http://localhost:8000/assets/raw/neo29/DataGalaxy%20Icons/dictionary/database.png?color=red" -o red-database.png
+```
+
 ### `GET /health`
 
 Returns `{"status": "ok", "service_version": "..."}` for uptime checks.
