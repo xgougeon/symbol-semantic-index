@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Symbol Semantic Index — Icon Selector</title>
+<title>Symbol Semantic Index — Icon Selector (Embeddings)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   :root {
@@ -13,6 +13,7 @@
     --muted: #93a2b8;
     --accent: #4fd1c5;
     --danger: #f87171;
+    --badge: #34d399;
   }
   * { box-sizing: border-box; }
   body {
@@ -23,7 +24,18 @@
     padding: 2rem 1rem 4rem;
   }
   .wrap { max-width: 880px; margin: 0 auto; }
-  h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.6rem; }
+  .badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(52, 211, 153, 0.15);
+    color: var(--badge);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+  }
   .sub { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; font-size: 0.9rem; }
   .panel {
     background: var(--panel);
@@ -103,8 +115,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Symbol Semantic Index — Icon Selector</h1>
-  <p class="sub">POC UI over <code>POST /v1/icons/select</code>.</p>
+  <h1>Symbol Semantic Index — Icon Selector <span class="badge">embeddings</span></h1>
+  <p class="sub">UI over <code>POST /v1/icons/select</code> — ranks icons by cosine similarity over a local ONNX (all-MiniLM-L6-v2) embedding of the vision-grounded icon metadata.</p>
 
   <div class="panel">
     <form id="select-form">
@@ -176,7 +188,7 @@ function renderResult(data) {
       <div class="alt">
         ${iconImgHtml(alt)}
         <div class="name">${alt.name}</div>
-        <div class="score">${alt.style} · ${alt.score.toFixed(2)}</div>
+        <div class="score">${alt.style} · cos ${alt.score.toFixed(3)}</div>
       </div>`).join('');
 
   const warningsHtml = data.warnings.length
@@ -190,7 +202,7 @@ function renderResult(data) {
         <div class="meta">
           <h2>${icon.name}</h2>
           <div class="id">${icon.icon_id} · ${icon.style}</div>
-          <div class="score">score ${data.score.toFixed(2)}</div>
+          <div class="score">cosine similarity ${data.score.toFixed(3)}</div>
         </div>
       </div>
       <div class="rationale">${data.rationale}</div>

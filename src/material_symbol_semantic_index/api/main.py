@@ -12,7 +12,8 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 
-from ..visual_selector import VisualIconRecord, VisualSelectionItem, icon_to_json, select_visual_icons
+from ..embedding_selector import select_visual_icons_v2 as select_visual_icons
+from ..visual_selector import VisualIconRecord, VisualSelectionItem, icon_to_json
 from .schemas import (
     HealthResponse,
     IconSelectBatchChoice,
@@ -22,7 +23,7 @@ from .schemas import (
     IconSelectResponse,
 )
 
-SERVICE_VERSION = "0.1.0"
+SERVICE_VERSION = "0.2.0"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 DATA_DIR = REPO_ROOT / "data"
